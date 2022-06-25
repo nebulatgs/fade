@@ -132,7 +132,8 @@ pub async fn command(kind: Kind, memory: u16) -> Result<()> {
 
     spinner.finish_with_message("\x1b[2J\x1b[1;1H");
 
-    let mut ssh_process = Command::new("ssh")
+    let mut ssh_process = Command::new("tailscale")
+        .arg("ssh")
         .arg(format!("fade@{}", machine.id))
         .arg("-o")
         .arg("BatchMode=yes")
