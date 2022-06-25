@@ -1,6 +1,6 @@
 [package]
 name = "fade"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Ephemeral virtual machines, leveraging Fly.io"
 repository = "https://github.com/nebulatgs/fade"

@@ -68,7 +68,6 @@ pub async fn command(kind: Kind, memory: u16) -> Result<()> {
         )
         .await?;
         let data = res.data.context("Failed to retrieve response body")?;
-        dbg!(data);
     }
 
     let res = post_graphql::<LaunchMachine, _>(
