@@ -1,0 +1,7 @@
+mutation LaunchMachine($input: LaunchMachineInput!) {
+	launchMachine(input: $input) {
+		machine {
+			id
+		}
+	}
+}

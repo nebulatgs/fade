@@ -1,0 +1,22 @@
+FROM ubuntu:rolling
+RUN apt-get update && apt-get install -y curl sudo htop tmux nano ncdu
+RUN curl -fsSL https://tailscale.com/install.sh | sh
+RUN curl -fsSL https://get.docker.com | sh
+RUN useradd -rm -d /home/fade -s /bin/bash -g root -G sudo,docker -u 1000 fade
+RUN passwd -d fade
+
+RUN touch /run/xtables.lock \
+    && chmod a+r /run/xtables.lock
+
+RUN mv /usr/sbin/iptables /usr/sbin/iptables-broken \
+    && cp /usr/sbin/iptables-legacy /usr/sbin/iptables \
+    && mv /usr/sbin/iptables-restore /usr/sbin/iptables-restore-broken \
+    && mv /usr/sbin/ip6tables-restore /usr/sbin/ip6tables-restore-broken \
+    && mv /usr/sbin/iptables-save /usr/sbin/iptables-save-broken \
+    && mv /usr/sbin/ip6tables-save /usr/sbin/ip6tables-save-broken \
+    && cp /usr/sbin/iptables-legacy-restore /usr/sbin/iptables-restore \
+    && cp /usr/sbin/ip6tables-legacy-restore /usr/sbin/ip6tables-restore \
+    && cp /usr/sbin/iptables-legacy-save /usr/sbin/iptables-save \
+    && cp /usr/sbin/ip6tables-legacy-save /usr/sbin/ip6tables-save
+
+ENTRYPOINT [ "/bin/bash", "-c", "sudo tailscaled & tailscale up --ssh --auth-key $TAILSCALE_AUTHKEY && dockerd" ]

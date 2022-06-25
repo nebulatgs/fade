@@ -1,0 +1,7 @@
+mutation RemoveMachine($input: RemoveMachineInput!) {
+	removeMachine(input: $input) {
+		machine {
+			id
+		}
+	}
+}

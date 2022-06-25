@@ -1,0 +1,7 @@
+query GetAppMeta($name: String, $internalId: String) {
+	app(name: $name, internalId: $internalId) {
+		name
+		internalId
+		id
+	}
+}

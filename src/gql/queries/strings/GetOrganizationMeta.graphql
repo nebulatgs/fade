@@ -1,0 +1,7 @@
+query GetOrganizationMeta($id: ID, $name: String, $slug: String) {
+	organization(id: $id, name: $name, slug: $slug) {
+		id
+		name
+		slug
+	}
+}

@@ -1,0 +1,8 @@
+mutation CreateApp($input: CreateAppInput!) {
+	createApp(input: $input) {
+		app {
+			id
+			name
+		}
+	}
+}
