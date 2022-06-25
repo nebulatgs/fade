@@ -1,7 +1,9 @@
 FROM ubuntu:rolling
-RUN apt-get update && apt-get install -y curl sudo htop tmux nano ncdu
+RUN apt-get update && apt-get install -y curl sudo htop tmux nano ncdu wget unzip zip git less man-db
+
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 RUN curl -fsSL https://get.docker.com | sh
+
 RUN useradd -rm -d /home/fade -s /bin/bash -g root -G sudo,docker -u 1000 fade
 RUN passwd -d fade
 

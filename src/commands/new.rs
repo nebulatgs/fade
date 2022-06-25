@@ -14,11 +14,12 @@ use crate::{
         },
         queries::{get_app_meta, get_organization_meta, GetAppMeta, GetOrganizationMeta},
     },
+    Kind,
 };
 
 use super::*;
 
-pub async fn command() -> Result<()> {
+pub async fn command(kind: Kind, memory: u16) -> Result<()> {
     let config = Configs::new().await?;
     let client = GQLClient::new_authorized(&config)?;
 
@@ -96,13 +97,20 @@ pub async fn command() -> Result<()> {
                         exec: None,
                         tty: Some(false),
                     },
-                    image: "nebulatgs/fade-stamp:latest".to_string(),
+                    image: format!(
+                        "nebulatgs/fade-stamp:{}",
+                        match kind {
+                            Kind::Min => "minimal",
+                            Kind::Docker => "minimal-docker",
+                            Kind::Full => "full",
+                        }
+                    ),
                     metadata: None,
                     restart: None,
                     guest: Guest {
                         cpu_kind: "shared".to_string(),
                         cpus: 8,
-                        memory_mb: 2048,
+                        memory_mb: memory.try_into()?,
                     },
                 },
             },

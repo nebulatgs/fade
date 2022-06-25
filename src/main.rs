@@ -1,5 +1,5 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{clap_derive::ArgEnum, Parser, Subcommand};
 use commands::{new, setup};
 
 mod client;
@@ -16,10 +16,25 @@ struct Cli {
     command: Commands,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
+pub enum Kind {
+    Min,
+    Docker,
+    Full,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Create a temporary VM
-    New,
+    New {
+        /// Kind of VM to create
+        #[clap(short, long, arg_enum, value_parser, default_value = "min")]
+        kind: Kind,
+
+        /// VM Memory (in MB)
+        #[clap(short, long, value_parser = clap::value_parser!(u16).range(2048..16384), default_value = "2048")]
+        memory: u16,
+    },
 
     /// Configure initial Fly settings
     Setup,
@@ -30,7 +45,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::New => new::command().await?,
+        Commands::New { kind, memory } => new::command(*kind, *memory).await?,
         Commands::Setup => setup::command().await?,
     }
 
