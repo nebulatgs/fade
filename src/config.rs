@@ -10,7 +10,7 @@ use tokio::{
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FadeConfig {
-    pub fly_app_name: String,
+    fly_app_name: String,
     pub tailscale_authkey: Option<String>,
     pub fly_pat: Option<String>,
     pub fly_organization: String,
@@ -54,6 +54,13 @@ impl Configs {
                 fly_pat: None,
             },
         })
+    }
+
+    pub fn fly_app_name(&self) -> String {
+        let mut name = self.root_config.fly_organization.clone();
+        name.push('-');
+        name.push_str(&self.root_config.fly_app_name);
+        name
     }
 
     pub async fn write(&self) -> Result<()> {

@@ -42,7 +42,7 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
         &client,
         "https://api.fly.io/graphql",
         get_app_meta::Variables {
-            name: Some(config.root_config.fly_app_name.clone()),
+            name: Some(config.fly_app_name()),
             internal_id: None,
         },
     )
@@ -58,7 +58,7 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
                     client_mutation_id: None,
                     organization_id: organization.id.clone(),
                     runtime: None,
-                    name: Some(config.root_config.fly_app_name.clone()),
+                    name: Some(config.fly_app_name()),
                     preferred_region: None,
                     heroku: None,
                     network: None,
@@ -75,7 +75,7 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
         "https://api.fly.io/graphql",
         launch_machine::Variables {
             input: launch_machine::LaunchMachineInput {
-                app_id: Some(config.root_config.fly_app_name.clone()),
+                app_id: Some(config.fly_app_name()),
                 client_mutation_id: None,
                 organization_id: Some(organization.id),
                 id: None,
@@ -151,7 +151,7 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
             input: remove_machine::RemoveMachineInput {
                 client_mutation_id: None,
                 id: machine.id,
-                app_id: Some(config.root_config.fly_app_name.clone()),
+                app_id: Some(config.fly_app_name()),
                 kill: Some(true),
             },
         },
