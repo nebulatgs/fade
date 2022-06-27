@@ -34,6 +34,10 @@ enum Commands {
         /// VM Memory (in MB)
         #[clap(short, long, value_parser = clap::value_parser!(u16).range(2048..16384), default_value = "2048")]
         memory: u16,
+
+        /// VM Memory (in MB)
+        #[clap(short, long)]
+        region: Option<String>,
     },
 
     /// Configure initial Fly settings
@@ -44,8 +48,12 @@ enum Commands {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    match &cli.command {
-        Commands::New { kind, memory } => new::command(*kind, *memory).await?,
+    match cli.command {
+        Commands::New {
+            kind,
+            memory,
+            region,
+        } => new::command(kind, memory, region).await?,
         Commands::Setup => setup::command().await?,
     }
 

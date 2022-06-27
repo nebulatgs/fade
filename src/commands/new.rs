@@ -19,7 +19,7 @@ use crate::{
 
 use super::*;
 
-pub async fn command(kind: Kind, memory: u16) -> Result<()> {
+pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<()> {
     let config = Configs::new().await?;
     let client = GQLClient::new_authorized(&config)?;
 
@@ -80,7 +80,7 @@ pub async fn command(kind: Kind, memory: u16) -> Result<()> {
                 organization_id: Some(organization.id),
                 id: None,
                 name: None,
-                region: None,
+                region,
                 config: MachineConfig {
                     env: Some(HashMap::from_iter([(
                         "TAILSCALE_AUTHKEY".to_string(),
