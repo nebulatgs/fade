@@ -1,0 +1,167 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*.*.*"
+env:
+  MACOSX_DEPLOYMENT_TARGET: 10.7
+
+jobs:
+  cargo-publish:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+          uses: actions/checkout@v2
+          with:
+            fetch-depth: 1
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-musl
+          profile: minimal
+          override: true
+
+      - name: Publish using Cargo
+          uses: actions-rs/cargo@v1
+          with:
+            command: publish
+
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      fade_version: ${{ env.FADE_VERSION }}
+
+    steps:
+      - name: Get the release version from the tag
+        shell: bash
+        if: env.FADE_VERSION == ''
+        run: |
+          # Apparently, this is the right way to get a tag name. Really?
+          #
+          # See: https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
+          echo "FADE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "version is: ${{ env.FADE_VERSION }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v2.9.0
+        with:
+          configuration: ".github/changelog-configuration.json"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub release
+        id: release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.FADE_VERSION }}
+          release_name: ${{ env.FADE_VERSION }}
+          body: ${{steps.build_changelog.outputs.changelog}}
+
+  build-release:
+    name: Build Release Assets
+    needs: ["create-release"]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: i686-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: arm-unknown-linux-musleabihf
+            os: ubuntu-latest
+
+          - target: x86_64-apple-darwin
+            os: macOS-latest
+
+          - target: aarch64-apple-darwin
+            os: macOS-latest
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+          - target: i686-pc-windows-msvc
+            os: windows-latest
+
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+
+          # - target: x86_64-unknown-freebsd
+          #   os: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          profile: minimal
+          override: true
+
+      - name: Build release binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --locked --target ${{ matrix.target }}
+          use-cross: ${{ matrix.os == 'ubuntu-latest' }}
+
+      - name: Prepare binaries [Windows]
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          strip fade.exe
+          7z a ../../../fade-${{ needs.create-release.outputs.fade_version }}-${{ matrix.target }}.zip fade.exe
+          cd -
+
+      - name: Prepare binaries [-linux]
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          strip fade || true
+          tar czvf ../../../fade-${{ needs.create-release.outputs.fade_version }}-${{ matrix.target }}.tar.gz fade
+          cd -
+
+      # - name: Add Checksums
+      #   run: for file in fade-*/fade-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
+
+      - name: Upload release archive
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.create-release.outputs.fade_version }}
+          files: fade-${{ needs.create-release.outputs.fade_version }}-${{ matrix.target }}*
+
+      - name: Set SHA
+        if: matrix.config.os == 'macos-latest'
+        id: shasum
+        run: |
+          echo ::set-output name=sha::"$(shasum -a 256 ./release/gitui-mac.tar.gz | awk '{printf $1}')"
