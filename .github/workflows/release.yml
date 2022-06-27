@@ -10,12 +10,12 @@ jobs:
   cargo-publish:
     name: Publish to crates.io
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
-          uses: actions/checkout@v2
-          with:
-            fetch-depth: 1
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
@@ -26,9 +26,11 @@ jobs:
           override: true
 
       - name: Publish using Cargo
-          uses: actions-rs/cargo@v1
-          with:
-            command: publish
+        uses: actions-rs/cargo@v1
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        with:
+          command: publish
 
   create-release:
     name: Create Release
