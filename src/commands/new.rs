@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::Context;
 use indicatif::ProgressBar;
-use tokio::process::Command;
+use tokio::{net::TcpListener, process::Command};
 
 use crate::{
     client::{post_graphql, GQLClient},
@@ -14,6 +14,7 @@ use crate::{
         },
         queries::{get_app_meta, get_organization_meta, GetAppMeta, GetOrganizationMeta},
     },
+    interface::get_tailscale_ipv6,
     Kind,
 };
 
@@ -22,6 +23,7 @@ use super::*;
 pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<()> {
     let config = Configs::new().await?;
     let client = GQLClient::new_authorized(&config)?;
+    let tailscale_addr = get_tailscale_ipv6()?;
 
     let res = post_graphql::<GetOrganizationMeta, _>(
         &client,
@@ -69,6 +71,7 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
         .await?;
         let data = res.data.context("Failed to retrieve response body")?;
     }
+    let listener = TcpListener::bind((tailscale_addr, 0)).await?;
 
     let res = post_graphql::<LaunchMachine, _>(
         &client,
@@ -82,14 +85,20 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
                 name: None,
                 region,
                 config: MachineConfig {
-                    env: Some(HashMap::from_iter([(
-                        "TAILSCALE_AUTHKEY".to_string(),
-                        config
-                            .root_config
-                            .tailscale_authkey
-                            .clone()
-                            .context("Missing Tailscale authkey")?,
-                    )])),
+                    env: Some(HashMap::from_iter([
+                        (
+                            "TAILSCALE_ADDR".to_string(),
+                            listener.local_addr()?.to_string(),
+                        ),
+                        (
+                            "TAILSCALE_AUTHKEY".to_string(),
+                            config
+                                .root_config
+                                .tailscale_authkey
+                                .clone()
+                                .context("Missing Tailscale authkey")?,
+                        ),
+                    ])),
                     init: Init {
                         cmd: None,
                         entrypoint: None,
@@ -121,20 +130,21 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
         .launch_machine
         .context("Failed to launch machine")?
         .machine;
-
     let spinner = ProgressBar::new_spinner().with_message("Launching machine");
     spinner.enable_steady_tick(50);
 
-    {
-        use std::net::ToSocketAddrs;
-        while let Err(_) = format!("{}:22", machine.id).to_socket_addrs() {}
-    }
+    let ip = listener.accept().await.map(|(_, addr)| addr.ip());
+
+    // {
+    //     use std::net::ToSocketAddrs;
+    //     while let Err(_) = format!("{}:22", machine.id).to_socket_addrs() {}
+    // }
 
     spinner.finish_with_message("\x1b[2J\x1b[1;1H");
 
     let mut ssh_process = Command::new("tailscale")
         .arg("ssh")
-        .arg(format!("fade@{}", machine.id))
+        .arg(format!("fade@{}", ip?))
         .arg("-o")
         .arg("BatchMode=yes")
         .arg("-o")

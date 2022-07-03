@@ -6,6 +6,7 @@ mod client;
 mod commands;
 mod config;
 mod gql;
+mod interface;
 
 /// Ephemeral virtual machines, leveraging Fly.io
 #[derive(Parser)]

@@ -1,4 +1,4 @@
-FROM ubuntu:rolling
+FROM ubuntu
 RUN apt-get update
 RUN yes | unminimize
 RUN apt-get install -y curl sudo htop tmux nano ncdu clang wget unzip zip git git-lfs build-essential jq less man-db ripgrep ninja-build cmake neofetch
@@ -23,4 +23,4 @@ RUN mv /usr/sbin/iptables /usr/sbin/iptables-broken \
     && cp /usr/sbin/iptables-legacy-save /usr/sbin/iptables-save \
     && cp /usr/sbin/ip6tables-legacy-save /usr/sbin/ip6tables-save
 
-ENTRYPOINT [ "/bin/bash", "-c", "sudo tailscaled & tailscale up --ssh --auth-key $TAILSCALE_AUTHKEY && dockerd" ]
+ENTRYPOINT [ "/bin/bash", "-c", "sudo tailscaled & tailscale up --ssh --auth-key $TAILSCALE_AUTHKEY; sleep 1 && curl $TAILSCALE_ADDR && dockerd" ]
