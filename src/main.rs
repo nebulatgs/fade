@@ -33,10 +33,10 @@ enum Commands {
         kind: Kind,
 
         /// VM Memory (in MB)
-        #[clap(short, long, value_parser = clap::value_parser!(u16).range(2048..16384), default_value = "2048")]
+        #[clap(short, long, value_parser = clap::value_parser!(u16).range(2048..=16384), default_value = "2048")]
         memory: u16,
 
-        /// VM Memory (in MB)
+        /// VM Region (iad, lhr, etc.)
         #[clap(short, long)]
         region: Option<String>,
     },
