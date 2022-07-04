@@ -30,3 +30,6 @@ dirs = "4.0.0"
 dns-lookup = "1.0.8"
 network-interface = "0.1.1"
 ipnet = "2.5.0"
+
+[workspace]
+members = ["stamp/launch"]

@@ -106,7 +106,12 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
                         tty: Some(false),
                     },
                     image: format!(
-                        "nebulatgs/fade-stamp:{}",
+                        "nebulatgs/fade-stamp{}:{}",
+                        if std::env::var("CARGO").is_err() {
+                            ""
+                        } else {
+                            "-dev"
+                        },
                         match kind {
                             Kind::Min => "minimal",
                             Kind::Docker => "minimal-docker",
