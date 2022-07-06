@@ -40,6 +40,10 @@ enum Commands {
         /// VM Region (iad, lhr, etc.)
         #[clap(short, long)]
         region: Option<String>,
+
+        /// Ports to expose
+        #[clap(short, long)]
+        port: Vec<u16>,
     },
 
     /// Clean up stopped machines
@@ -58,7 +62,8 @@ async fn main() -> Result<()> {
             kind,
             memory,
             region,
-        } => new::command(kind, memory, region).await?,
+            port,
+        } => new::command(kind, memory, region, port).await?,
         Commands::Cleanup => cleanup::command().await?,
         Commands::Setup => setup::command().await?,
     }
