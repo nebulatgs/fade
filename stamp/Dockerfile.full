@@ -13,16 +13,8 @@ RUN passwd -d fade
 RUN touch /run/xtables.lock \
     && chmod a+r /run/xtables.lock
 
-RUN mv /usr/sbin/iptables /usr/sbin/iptables-broken \
-    && cp /usr/sbin/iptables-legacy /usr/sbin/iptables \
-    && mv /usr/sbin/iptables-restore /usr/sbin/iptables-restore-broken \
-    && mv /usr/sbin/ip6tables-restore /usr/sbin/ip6tables-restore-broken \
-    && mv /usr/sbin/iptables-save /usr/sbin/iptables-save-broken \
-    && mv /usr/sbin/ip6tables-save /usr/sbin/ip6tables-save-broken \
-    && cp /usr/sbin/iptables-legacy-restore /usr/sbin/iptables-restore \
-    && cp /usr/sbin/ip6tables-legacy-restore /usr/sbin/ip6tables-restore \
-    && cp /usr/sbin/iptables-legacy-save /usr/sbin/iptables-save \
-    && cp /usr/sbin/ip6tables-legacy-save /usr/sbin/ip6tables-save
+RUN update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy \
+    && update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 COPY --from=nebulatgs/fade-launch --link /target/launch /bin/launch
 ENTRYPOINT [ "/bin/bash", "-c", "dockerd & launch" ]
