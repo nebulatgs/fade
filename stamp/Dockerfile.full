@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.4
-FROM ubuntu
+FROM ubuntu:20.04
 RUN apt-get update
 RUN yes | unminimize
-RUN apt-get install -y curl sudo htop tmux nano ncdu clang wget unzip zip git git-lfs build-essential jq less man-db ripgrep ninja-build cmake neofetch
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl sudo htop tmux nano ncdu clang wget unzip zip git git-lfs build-essential jq less man-db ripgrep ninja-build cmake neofetch
 
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 RUN curl -fsSL https://get.docker.com | sh

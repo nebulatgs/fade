@@ -1,12 +1,13 @@
 use anyhow::Result;
 use clap::{clap_derive::ArgEnum, Parser, Subcommand};
-use commands::{new, setup};
+use commands::{cleanup, new, setup};
 
 mod client;
 mod commands;
 mod config;
 mod gql;
 mod interface;
+mod rest;
 
 /// Ephemeral virtual machines, leveraging Fly.io
 #[derive(Parser)]
@@ -41,6 +42,9 @@ enum Commands {
         region: Option<String>,
     },
 
+    /// Clean up stopped machines
+    Cleanup,
+
     /// Configure initial Fly settings
     Setup,
 }
@@ -55,6 +59,7 @@ async fn main() -> Result<()> {
             memory,
             region,
         } => new::command(kind, memory, region).await?,
+        Commands::Cleanup => cleanup::command().await?,
         Commands::Setup => setup::command().await?,
     }
 
