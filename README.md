@@ -6,6 +6,7 @@ Create and destroy temporary virtual machines in seconds.
 
 ## Dependencies
 - [`tailscale`](https://tailscale.com/download)
+- [`flyctl`](https://fly.io/docs/getting-started/installing-flyctl)
 - `ssh`
 
 ## Install
