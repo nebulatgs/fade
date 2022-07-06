@@ -1,3 +1,5 @@
+use crate::rest::RestQuery;
+
 use super::config::Configs;
 use anyhow::{bail, Result};
 use graphql_client::{GraphQLQuery, Response};
@@ -6,10 +8,10 @@ use reqwest::{
     Client,
 };
 
-pub struct GQLClient;
+pub struct AuthorizedClient;
 
-impl GQLClient {
-    pub fn new_authorized(configs: &Configs) -> Result<Client> {
+impl AuthorizedClient {
+    pub fn new(configs: &Configs) -> Result<Client> {
         let mut headers = HeaderMap::new();
         if let Some(token) = configs.root_config.fly_pat.clone() {
             headers.insert(
@@ -31,6 +33,34 @@ pub async fn post_graphql<Q: GraphQLQuery, U: reqwest::IntoUrl>(
 ) -> Result<Response<Q::ResponseData>, reqwest::Error> {
     let body = Q::build_query(variables);
     let reqwest_response = client.post(url).json(&body).send().await?;
+
+    Ok(reqwest_response.json().await?)
+}
+
+pub async fn post_rest<Q: RestQuery, U: reqwest::IntoUrl>(
+    client: &reqwest::Client,
+    url: U,
+    body: Q::RequestData,
+) -> Result<Q::ResponseData, reqwest::Error> {
+    let reqwest_response = client.post(url).json(&body).send().await?;
+
+    Ok(reqwest_response.json().await?)
+}
+
+pub async fn delete_rest<U: reqwest::IntoUrl>(
+    client: &reqwest::Client,
+    url: U,
+) -> Result<(), reqwest::Error> {
+    client.delete(url).send().await?;
+
+    Ok(())
+}
+
+pub async fn get_rest<R: for<'de> serde::Deserialize<'de>, U: reqwest::IntoUrl>(
+    client: &reqwest::Client,
+    url: U,
+) -> Result<R, reqwest::Error> {
+    let reqwest_response = client.get(url).send().await?;
 
     Ok(reqwest_response.json().await?)
 }

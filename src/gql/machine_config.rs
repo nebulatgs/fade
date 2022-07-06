@@ -9,7 +9,7 @@ pub struct MachineConfig {
     pub image: String,
     pub metadata: Option<HashMap<String, String>>,
     pub restart: Option<Restart>,
-    pub guest: Guest,
+    pub guest: Option<Guest>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
