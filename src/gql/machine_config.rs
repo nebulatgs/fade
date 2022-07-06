@@ -7,9 +7,22 @@ pub struct MachineConfig {
     pub env: Option<HashMap<String, String>>,
     pub init: Init,
     pub image: String,
+    pub services: Option<Vec<Service>>,
     pub metadata: Option<HashMap<String, String>>,
     pub restart: Option<Restart>,
     pub guest: Option<Guest>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Service {
+    pub internal_port: u16,
+    pub ports: Vec<Port>,
+    pub protocol: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Port {
+    pub port: u16,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

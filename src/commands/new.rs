@@ -8,11 +8,11 @@ use tokio::{
 };
 
 use crate::{
-    client::{delete_rest, post_graphql, post_rest, AuthorizedClient},
+    client::{post_graphql, post_rest, AuthorizedClient},
     config::Configs,
     gql::{
-        machine_config::{Guest, Init, MachineConfig},
-        mutations::{create_app, remove_machine, CreateApp, RemoveMachine},
+        machine_config::{Guest, Init, MachineConfig, Port, Service},
+        mutations::{create_app, CreateApp},
         queries::{get_app_meta, get_organization_meta, GetAppMeta, GetOrganizationMeta},
     },
     interface::get_tailscale_ipv6,
@@ -25,7 +25,12 @@ use crate::{
 
 use super::*;
 
-pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<()> {
+pub async fn command(
+    kind: Kind,
+    memory: u16,
+    region: Option<String>,
+    ports: Vec<u16>,
+) -> Result<()> {
     let config = Configs::new().await?;
     let client = AuthorizedClient::new(&config)?;
     let tailscale_addr = get_tailscale_ipv6()?;
@@ -121,6 +126,15 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
     }
     let listener = TcpListener::bind((tailscale_addr, 0)).await?;
 
+    let services = ports
+        .iter()
+        .map(|port| Service {
+            internal_port: *port,
+            protocol: "tcp".to_string(),
+            ports: vec![Port { port: *port }],
+        })
+        .collect::<Vec<_>>();
+
     let res = post_rest::<LaunchMachine, _>(
         &client,
         format!(
@@ -151,6 +165,7 @@ pub async fn command(kind: Kind, memory: u16, region: Option<String>) -> Result<
                     exec: None,
                     tty: Some(false),
                 },
+                services: Some(services),
                 image: format!(
                     "nebulatgs/fade-stamp{}:{}",
                     if std::env::var("CARGO").is_err() {
