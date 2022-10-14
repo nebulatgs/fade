@@ -35,8 +35,8 @@ pub struct Guest {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Init {
     pub exec: Option<String>,
-    pub entrypoint: Option<String>,
-    pub cmd: Option<String>,
+    pub entrypoint: Option<Vec<String>>,
+    pub cmd: Option<Vec<String>>,
     pub tty: Option<bool>,
 }
 

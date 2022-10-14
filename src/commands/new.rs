@@ -25,11 +25,18 @@ use crate::{
 
 use super::*;
 
+pub fn parse_port(port: &str) -> Result<(u16, u16)> {
+    let mut parts = port.split(':');
+    let internal = parts.next().context("Invalid port")?.parse::<u16>()?;
+    let external = parts.next().map_or(Ok(internal), |p| p.parse::<u16>())?;
+    Ok((internal, external))
+}
+
 pub async fn command(
     kind: Kind,
     memory: u16,
     region: Option<String>,
-    ports: Vec<u16>,
+    ports: Vec<String>,
 ) -> Result<()> {
     let config = Configs::new().await?;
     let client = AuthorizedClient::new(&config)?;
@@ -128,12 +135,16 @@ pub async fn command(
 
     let services = ports
         .iter()
-        .map(|port| Service {
-            internal_port: *port,
-            protocol: "tcp".to_string(),
-            ports: vec![Port { port: *port }],
+        .map(|port| parse_port(port))
+        .map(|res| {
+            res.map(|(internal, external)| Service {
+                internal_port: internal,
+                protocol: "tcp".to_string(),
+                ports: vec![Port { port: external }],
+            })
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>>>()?;
+    dbg!(&services);
 
     let res = post_rest::<LaunchMachine, _>(
         &client,

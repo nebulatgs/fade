@@ -41,9 +41,9 @@ enum Commands {
         #[clap(short, long)]
         region: Option<String>,
 
-        /// Ports to expose
+        /// Ports to expose (internal:external)
         #[clap(short, long)]
-        port: Vec<u16>,
+        port: Vec<String>,
     },
 
     /// Clean up stopped machines
