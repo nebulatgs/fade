@@ -1,0 +1,15 @@
+# syntax=docker/dockerfile:1.4
+FROM nebulatgs/fade-stamp:jammy
+RUN [ "/sw/bin/bash", "-c", "/init; exit 0" ]
+RUN /sw/bin/passwd -d fade
+#RUN /sw/bin/mkdir -p /run/systemd
+#RUN /sw/bin/touch /run/systemd/container
+COPY --from=nebulatgs/fade-launch --link /target/launch /bin/launch
+#COPY --from=ubuntu:20.04 --link /bin/bash /sbin/sh
+#COPY --from=ubuntu:20.04 --link /usr/bin/tail /sbin/tail
+#ENTRYPOINT ["/sw/bin/bash", "-c", "/init; /bin/launch" ]
+#ENTRYPOINT /sw/bin/bash -c '/init; exec /sw/bin/bash -c "PATH=/run/current-system/sw/bin /bin/launch & exec /init"'
+#ENTRYPOINT /sw/bin/bash -c '/init; exec /sw/bin/bash -c "PATH=/run/current-system/sw/bin /bin/launch; /sw/bin/tail -f /dev/null"'
+#ENTRYPOINT [ "/nix/store/zxn21d03iv66n147ff90j8m5mh5xl0x6-bash-interactive-5.1-p16/bin/bash", "-c", "/nix/store/b493219lk03zc8hsj5slxd602ywdlk59-util-linux-2.37.4-bin/bin/unshare --fork --pid --mount-proc /sbin/init; /nix/store/jqi28wlc7cbkpwal96vxjyvdnzbwv529-coreutils-full-9.1/bin/tail -f /dev/null" ]
+ENTRYPOINT /sw/bin/bash -c '/sw/bin/unshare --fork --pid --mount-proc /init & /sw/bin/bash -c "PATH=/run/current-system/sw/bin /bin/launch; /sw/bin/tail -f /dev/null"'
+#ENTRYPOINT /sw/bin/bash -c '/sw/bin/unshare --fork --pid --mount-proc /init & /sw/bin/bash -c "PATH=/run/current-system/sw/bin /bin/launch"; /sw/bin/tail -f /dev/null'

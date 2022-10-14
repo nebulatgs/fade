@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-FROM ubuntu:20.04
+FROM ubuntu:jammy
 RUN apt-get update && apt-get install -y curl sudo htop tmux nano ncdu wget unzip zip git less man-db
 
 RUN curl -fsSL https://tailscale.com/install.sh | sh
