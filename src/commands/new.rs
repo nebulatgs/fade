@@ -156,7 +156,6 @@ pub async fn command(
             })
         })
         .collect::<Result<Vec<_>>>()?;
-    dbg!(&services);
 
     let res = post_rest::<LaunchMachine, _>(
         &client,
