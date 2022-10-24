@@ -1,12 +1,14 @@
 # syntax=docker/dockerfile:1.4
 FROM ubuntu:jammy
-RUN apt-get update && apt-get install -y curl sudo htop tmux nano ncdu wget unzip zip git less man-db
+RUN apt-get update && apt-get install -y curl sudo htop tmux nano ncdu wget unzip zip git less man-db openssh-server
 
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 
 RUN groupadd docker
 RUN useradd -rm -d /home/fade -s /bin/bash -g root -G sudo,docker -u 1000 fade
 RUN passwd -d fade
+
+RUN mkdir /var/run/sshd
 
 RUN touch /run/xtables.lock \
     && chmod a+r /run/xtables.lock

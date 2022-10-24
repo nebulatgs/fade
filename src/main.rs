@@ -44,6 +44,10 @@ enum Commands {
         /// Ports to expose (internal:external)
         #[clap(short, long)]
         port: Vec<String>,
+
+        /// Tailscale
+        #[clap(short, long, takes_value = false)]
+        tailscale: bool,
     },
 
     /// Clean up stopped machines
@@ -63,7 +67,8 @@ async fn main() -> Result<()> {
             memory,
             region,
             port,
-        } => new::command(kind, memory, region, port).await?,
+            tailscale,
+        } => new::command(kind, memory, region, port, tailscale).await?,
         Commands::Cleanup => cleanup::command().await?,
         Commands::Setup => setup::command().await?,
     }

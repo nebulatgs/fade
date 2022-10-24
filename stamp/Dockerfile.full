@@ -2,13 +2,15 @@
 FROM ubuntu:jammy
 RUN apt-get update
 RUN yes | unminimize
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl sudo htop tmux nano ncdu clang wget unzip zip git git-lfs build-essential jq less man-db ripgrep ninja-build cmake neofetch
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl sudo htop tmux nano ncdu clang wget unzip zip git git-lfs build-essential jq less man-db ripgrep ninja-build cmake neofetch openssh-server
 
 RUN curl -fsSL https://tailscale.com/install.sh | sh
 RUN curl -fsSL https://get.docker.com | sh
 
 RUN useradd -rm -d /home/fade -s /bin/bash -g root -G sudo,docker -u 1000 fade
 RUN passwd -d fade
+
+RUN mkdir /var/run/sshd
 
 RUN touch /run/xtables.lock \
     && chmod a+r /run/xtables.lock

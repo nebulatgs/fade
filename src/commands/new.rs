@@ -2,6 +2,7 @@ use std::{collections::HashMap, process::Stdio, time::Duration};
 
 use anyhow::Context;
 use indicatif::ProgressBar;
+use rand::Rng;
 use tokio::{
     net::{TcpListener, TcpStream},
     process::Command,
@@ -37,10 +38,16 @@ pub async fn command(
     memory: u16,
     region: Option<String>,
     ports: Vec<String>,
+    tailscale: bool,
 ) -> Result<()> {
     let config = Configs::new().await?;
     let client = AuthorizedClient::new(&config)?;
-    let tailscale_addr = get_tailscale_ipv6()?;
+
+    let tailscale_addr = if tailscale {
+        Some(get_tailscale_ipv6()?)
+    } else {
+        None
+    };
 
     let res = post_graphql::<GetOrganizationMeta, _>(
         &client,
@@ -76,7 +83,7 @@ pub async fn command(
             .arg("api-proxy")
             .arg("-o")
             .stdout(Stdio::piped())
-            .arg(organization.slug)
+            .arg(&organization.slug)
             .kill_on_drop(true)
             .spawn()?;
         let stdout = proxy_command
@@ -131,7 +138,12 @@ pub async fn command(
         .await?;
         res.data.context("Failed to retrieve response body")?;
     }
-    let listener = TcpListener::bind((tailscale_addr, 0)).await?;
+
+    let listener = if let Some(tailscale_addr) = tailscale_addr {
+        Some(TcpListener::bind((tailscale_addr, 0)).await?)
+    } else {
+        None
+    };
 
     let services = ports
         .iter()
@@ -156,20 +168,24 @@ pub async fn command(
             name: None,
             region,
             config: MachineConfig {
-                env: Some(HashMap::from_iter([
-                    (
-                        "TAILSCALE_ADDR".to_string(),
-                        listener.local_addr()?.to_string(),
-                    ),
-                    (
-                        "TAILSCALE_AUTHKEY".to_string(),
-                        config
-                            .root_config
-                            .tailscale_authkey
-                            .clone()
-                            .context("Missing Tailscale authkey")?,
-                    ),
-                ])),
+                env: if let Some(ref listener) = listener {
+                    Some(HashMap::from_iter([
+                        (
+                            "TAILSCALE_ADDR".to_string(),
+                            listener.local_addr()?.to_string(),
+                        ),
+                        (
+                            "TAILSCALE_AUTHKEY".to_string(),
+                            config
+                                .root_config
+                                .tailscale_authkey
+                                .clone()
+                                .context("Missing Tailscale authkey")?,
+                        ),
+                    ]))
+                } else {
+                    None
+                },
                 init: Init {
                     cmd: None,
                     entrypoint: None,
@@ -188,7 +204,7 @@ pub async fn command(
                         Kind::Min => "minimal",
                         Kind::Docker => "minimal-docker",
                         Kind::Full => "full",
-                    }
+                    },
                 ),
                 metadata: None,
                 restart: None,
@@ -204,19 +220,50 @@ pub async fn command(
     let spinner = ProgressBar::new_spinner().with_message("Launching machine");
     spinner.enable_steady_tick(50);
 
-    let ip = listener.accept().await.map(|(_, addr)| addr.ip());
+    let port = rand::thread_rng().gen_range(2000..3000);
+
+    let ip = if let Some(listener) = listener {
+        Some(listener.accept().await.map(|(_, addr)| addr.ip()))
+    } else {
+        Command::new("flyctl")
+            .arg("proxy")
+            .arg(format!("{port}:23"))
+            .arg("-q")
+            .arg("-o")
+            .arg(&organization.slug)
+            .arg(format!("{}", &res.private_ip))
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()?;
+        None
+    };
 
     spinner.finish_with_message("\x1b[2J\x1b[1;1H");
 
-    let mut ssh_process = Command::new("tailscale")
-        .arg("ssh")
-        .arg(format!("fade@{}", ip?))
-        .arg("-o")
-        .arg("BatchMode=yes")
-        .arg("-o")
-        .arg("StrictHostKeyChecking=no")
-        .spawn()?;
-    ssh_process.wait().await?;
+    if let Some(ip) = ip {
+        let mut ssh_process = Command::new("tailscale")
+            .arg("ssh")
+            .arg(format!("fade@{}", ip?))
+            .arg("-o")
+            .arg("BatchMode=yes")
+            .arg("-o")
+            .arg("StrictHostKeyChecking=no")
+            .spawn()?;
+        ssh_process.wait().await?;
+    } else {
+        let mut ssh_process = Command::new("ssh")
+            .arg("-o")
+            .arg("BatchMode=yes")
+            .arg("-o")
+            .arg("StrictHostKeyChecking=no")
+            .arg("-o")
+            .arg("UserKnownHostsFile=/dev/null")
+            .arg("fade@127.0.0.1")
+            .arg("-p")
+            .arg(port.to_string())
+            .spawn()?;
+        ssh_process.wait().await?;
+    }
 
     post_rest::<StopMachine, _>(
         &client,

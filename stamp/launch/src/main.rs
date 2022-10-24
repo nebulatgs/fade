@@ -8,6 +8,22 @@ use tokio::{
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    if std::env::var("TAILSCALE_ADDR")
+        .unwrap_or_default()
+        .is_empty()
+    {
+        eprintln!("Running without tailscale");
+        let mut sshd = Command::new("/usr/sbin/sshd")
+            .arg("-D")
+            .arg("-p")
+            .arg("23")
+            .arg("-o")
+            .arg("PermitEmptyPasswords=yes")
+            .spawn()?;
+        sshd.wait().await?;
+        return Ok(());
+    }
+
     let tailscale_authkey = std::env::var("TAILSCALE_AUTHKEY")?;
     let tailscale_addr = std::env::var("TAILSCALE_ADDR")?;
 
